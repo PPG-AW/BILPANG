@@ -7,7 +7,7 @@ import { renderKatex } from './utils/helpers';
 // ====================================
 // GANTI URL DI BAWAH INI DENGAN URL WEB APP ANDA
 // ====================================
-const APPS_SCRIPT_URL = '';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVtfQUth5aveerEgJ4gBmy_NXzRGCqACJqYMHpFN-jiT21uFvADGw0PWjj_7L9XJkogA/exec';
 // ====================================
 
 // ======== ICONS (SVG inline) ========
