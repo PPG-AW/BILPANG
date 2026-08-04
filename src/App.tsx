@@ -7,7 +7,7 @@ import { renderKatex } from './utils/helpers';
 // ====================================
 // GANTI URL DI BAWAH INI DENGAN URL WEB APP ANDA
 // ====================================
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVtfQUth5aveerEgJ4gBmy_NXzRGCqACJqYMHpFN-jiT21uFvADGw0PWjj_7L9XJkogA/exec';
+const APPS_SCRIPT_URL = '';
 // ====================================
 
 // ======== ICONS (SVG inline) ========
@@ -29,6 +29,11 @@ const Icons = {
   lightbulb: <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></svg>,
   user: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>,
   refresh: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>,
+  keyboard: <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="M6 8h.001"/><path d="M10 8h.001"/><path d="M14 8h.001"/><path d="M18 8h.001"/><path d="M8 12h.001"/><path d="M12 12h.001"/><path d="M16 12h.001"/><path d="M7 16h10"/></svg>,
+  chevronDown: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>,
+  arrowLeft: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>,
+  arrowRightSm: <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>,
+  deleteKey: <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10 5a2 2 0 0 0-1.344.519l-6.328 5.74a1 1 0 0 0 0 1.481l6.328 5.741A2 2 0 0 0 10 19h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2z"/><path d="m12 9 6 6"/><path d="m18 9-6 6"/></svg>,
 };
 
 // ======== TYPES ========
@@ -470,6 +475,68 @@ function WelcomeScreen({ selectedTopic, selectedSubtype, onStart, hasSelection }
   );
 }
 
+// ======== VIRTUAL KEYBOARD ========
+function VirtualKeyboard({ mqFieldRef, visible, onClose }: {
+  mqFieldRef: React.MutableRefObject<any>; visible: boolean; onClose: () => void;
+}) {
+  const mqType = (char: string) => { if (!mqFieldRef.current) return; mqFieldRef.current.typedText(char); mqFieldRef.current.focus(); };
+  const mqCmd = (cmd: string) => { if (!mqFieldRef.current) return; mqFieldRef.current.cmd(cmd); mqFieldRef.current.focus(); };
+  const mqWrite = (latex: string) => { if (!mqFieldRef.current) return; mqFieldRef.current.write(latex); mqFieldRef.current.focus(); };
+  const mqKey = (key: string) => { if (!mqFieldRef.current) return; mqFieldRef.current.keystroke(key); mqFieldRef.current.focus(); };
+
+  if (!visible) return null;
+
+  return (
+    <div className="vk-overlay">
+      <div className="vk-container animate-slideUp">
+        <div className="vk-header">
+          <span className="vk-title">Keyboard</span>
+          <button className="vk-close" onClick={onClose}>{Icons.chevronDown}</button>
+        </div>
+        {/* Row 1: Numbers */}
+        <div className="vk-row">
+          {['1','2','3','4','5','6','7','8','9','0'].map(n => (
+            <button key={n} className="vk-key" onPointerDown={e => { e.preventDefault(); mqType(n); }}>{n}</button>
+          ))}
+        </div>
+        {/* Row 2: Variables & sign */}
+        <div className="vk-row">
+          {['a','b','x','y'].map(v => (
+            <button key={v} className="vk-key vk-key-var" onPointerDown={e => { e.preventDefault(); mqType(v); }}>{v}</button>
+          ))}
+          <button className="vk-key" onPointerDown={e => { e.preventDefault(); mqType('-'); }}>−</button>
+          <button className="vk-key" onPointerDown={e => { e.preventDefault(); mqType('+'); }}>+</button>
+          <button className="vk-key" onPointerDown={e => { e.preventDefault(); mqType('.'); }}>.</button>
+          <button className="vk-key" onPointerDown={e => { e.preventDefault(); mqWrite('('); mqWrite(')'); mqKey('Left'); }}>(  )</button>
+          <button className="vk-key vk-key-nav" onPointerDown={e => { e.preventDefault(); mqKey('Left'); }}>{Icons.arrowLeft}</button>
+          <button className="vk-key vk-key-nav" onPointerDown={e => { e.preventDefault(); mqKey('Right'); }}>{Icons.arrowRightSm}</button>
+        </div>
+        {/* Row 3: Math ops */}
+        <div className="vk-row">
+          <button className="vk-key vk-key-op" onPointerDown={e => { e.preventDefault(); mqCmd('^'); }}>
+            <span dangerouslySetInnerHTML={{ __html: renderKatex('x^n', false) }} />
+          </button>
+          <button className="vk-key vk-key-op" onPointerDown={e => { e.preventDefault(); mqCmd('/'); }}>
+            <span dangerouslySetInnerHTML={{ __html: renderKatex('\\frac{a}{b}', false) }} />
+          </button>
+          <button className="vk-key vk-key-op" onPointerDown={e => { e.preventDefault(); mqCmd('\\sqrt'); }}>
+            <span dangerouslySetInnerHTML={{ __html: renderKatex('\\sqrt{\\,}', false) }} />
+          </button>
+          <button className="vk-key vk-key-op" onPointerDown={e => { e.preventDefault(); mqCmd('\\nthroot'); }}>
+            <span dangerouslySetInnerHTML={{ __html: renderKatex('\\sqrt[n]{\\,}', false) }} />
+          </button>
+          <button className="vk-key vk-key-op" onPointerDown={e => { e.preventDefault(); mqWrite('\\times'); }}>
+            <span dangerouslySetInnerHTML={{ __html: renderKatex('\\times', false) }} />
+          </button>
+          <button className="vk-key vk-key-del vk-key-wide" onPointerDown={e => { e.preventDefault(); mqKey('Backspace'); }}>
+            {Icons.deleteKey}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ======== QUESTION CARD ========
 function QuestionCard({ question, questionNum, showResult, isCorrect, userAnswer, onCheck, onNext, mqRef, mqFieldRef, timerEnabled, timeLeft, timeUp, renderMath }: {
   question: Question; questionNum: number; showResult: boolean; isCorrect: boolean;
@@ -480,9 +547,9 @@ function QuestionCard({ question, questionNum, showResult, isCorrect, userAnswer
 }) {
   const mqContainerRef = useRef<HTMLDivElement>(null);
   const [mqReady, setMqReady] = useState(false);
+  const [vkOpen, setVkOpen] = useState(false);
 
   useEffect(() => {
-    // Initialize MathQuill field
     const initField = () => {
       const MQ = mqRef.current;
       if (!MQ || !mqContainerRef.current) {
@@ -491,15 +558,22 @@ function QuestionCard({ question, questionNum, showResult, isCorrect, userAnswer
       }
       const el = mqContainerRef.current.querySelector('.mq-field');
       if (!el) return;
-      // Clear any existing
       if (mqFieldRef.current) {
         try { mqFieldRef.current.revert(); } catch {}
       }
       const field = MQ.MathField(el, {
         spaceBehavesLikeTab: true,
-        handlers: {
-          edit: () => {},
+        substituteTextarea: function () {
+          // Use a textarea that doesn't trigger mobile keyboard
+          const ta = document.createElement('textarea');
+          ta.setAttribute('autocapitalize', 'off');
+          ta.setAttribute('autocomplete', 'off');
+          ta.setAttribute('autocorrect', 'off');
+          ta.setAttribute('spellcheck', 'false');
+          // On mobile, prevent default soft keyboard by setting readOnly when virtual keyboard is open
+          return ta;
         },
+        handlers: { edit: () => {} },
       });
       mqFieldRef.current = field;
       setMqReady(true);
@@ -513,25 +587,11 @@ function QuestionCard({ question, questionNum, showResult, isCorrect, userAnswer
       }
       setMqReady(false);
     };
-  }, [question]); // Re-init on new question
+  }, [question]);
 
-  const mqCmd = (cmd: string) => {
-    if (!mqFieldRef.current) return;
-    mqFieldRef.current.cmd(cmd);
-    mqFieldRef.current.focus();
-  };
-
-  const mqWrite = (latex: string) => {
-    if (!mqFieldRef.current) return;
-    mqFieldRef.current.write(latex);
-    mqFieldRef.current.focus();
-  };
-
-  const mqKeystroke = (key: string) => {
-    if (!mqFieldRef.current) return;
-    mqFieldRef.current.keystroke(key);
-    mqFieldRef.current.focus();
-  };
+  const mqCmd = (cmd: string) => { if (!mqFieldRef.current) return; mqFieldRef.current.cmd(cmd); mqFieldRef.current.focus(); };
+  const mqWrite = (latex: string) => { if (!mqFieldRef.current) return; mqFieldRef.current.write(latex); mqFieldRef.current.focus(); };
+  const mqKeystroke = (key: string) => { if (!mqFieldRef.current) return; mqFieldRef.current.keystroke(key); mqFieldRef.current.focus(); };
 
   const formatTime = (secs: number) => {
     const m = Math.floor(secs / 60);
@@ -542,7 +602,7 @@ function QuestionCard({ question, questionNum, showResult, isCorrect, userAnswer
   const commandLabel = question.commandType === 'simplify' ? 'Sederhanakan' : 'Hitung';
 
   return (
-    <div className="card animate-fadeIn" key={questionNum}>
+    <div className={`card animate-fadeIn ${vkOpen ? 'card-with-vk' : ''}`} key={questionNum}>
       <div className="question-header">
         <span className="question-number">Soal ke-{questionNum}</span>
         <span className="question-type-badge">{commandLabel}</span>
@@ -562,11 +622,13 @@ function QuestionCard({ question, questionNum, showResult, isCorrect, userAnswer
         <>
           <div className="mq-container" ref={mqContainerRef}>
             <div className="mq-container-label">Jawabanmu:</div>
-            <div className="mq-input-wrapper" onClick={() => mqFieldRef.current?.focus()}>
+            <div className="mq-input-wrapper" onClick={() => { mqFieldRef.current?.focus(); }}>
               <span className="mq-field"></span>
             </div>
           </div>
-          <div className="mq-buttons">
+
+          {/* Desktop: inline buttons */}
+          <div className="mq-buttons mq-buttons-desktop">
             <button className="mq-btn" onClick={() => mqCmd('^')} title="Pangkat">
               <span dangerouslySetInnerHTML={{ __html: renderKatex('a^{n}', false) }} />
             </button>
@@ -587,9 +649,18 @@ function QuestionCard({ question, questionNum, showResult, isCorrect, userAnswer
               {Icons.refresh} Hapus
             </button>
           </div>
-          <button className="btn btn-primary btn-full" onClick={onCheck} disabled={!mqReady}>
+
+          {/* Mobile: toggle keyboard button */}
+          <button className="btn btn-secondary btn-full vk-toggle-btn" onClick={() => setVkOpen(!vkOpen)}>
+            {Icons.keyboard} <span>{vkOpen ? 'Tutup Keyboard' : 'Buka Keyboard'}</span>
+          </button>
+
+          <button className="btn btn-primary btn-full mt-4" onClick={onCheck} disabled={!mqReady}>
             {Icons.check} Periksa Jawaban
           </button>
+
+          {/* Virtual keyboard */}
+          <VirtualKeyboard mqFieldRef={mqFieldRef} visible={vkOpen} onClose={() => setVkOpen(false)} />
         </>
       ) : (
         <div className="animate-fadeIn">
