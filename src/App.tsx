@@ -7,7 +7,7 @@ import { renderKatex } from './utils/helpers';
 // ====================================
 // GANTI URL DI BAWAH INI DENGAN URL WEB APP ANDA
 // ====================================
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxVtfQUth5aveerEgJ4gBmy_NXzRGCqACJqYMHpFN-jiT21uFvADGw0PWjj_7L9XJkogA/exec';
+const APPS_SCRIPT_URL = '';
 // ====================================
 
 // ======== ICONS (SVG inline) ========
@@ -49,6 +49,99 @@ interface DashboardRow {
   soal: string;
   jawabanSiswa: string;
   status: string;
+}
+
+// ======== ANSWER COMPARISON ========
+function normalizeLatex(s: string): string {
+  let r = s;
+  // Remove all whitespace
+  r = r.replace(/\s+/g, '');
+  // Normalize multiplication symbols: \cdot, \times, ·, * → ×
+  r = r.replace(/\\cdot/g, '×');
+  r = r.replace(/\\times/g, '×');
+  r = r.replace(/·/g, '×');
+  r = r.replace(/\*/g, '×');
+  // Normalize \div → ÷
+  r = r.replace(/\\div/g, '÷');
+  // Remove \left and \right
+  r = r.replace(/\\left/g, '');
+  r = r.replace(/\\right/g, '');
+  // Remove \mathbf, \textcolor{...}{...} → keep inner
+  r = r.replace(/\\mathbf\{([^}]*)\}/g, '$1');
+  r = r.replace(/\\textcolor\{[^}]*\}\{([^}]*)\}/g, '$1');
+  r = r.replace(/\\boldsymbol\{([^}]*)\}/g, '$1');
+  // Normalize single-char braces: ^{a} → ^a, _{a} → _a (only single char/digit)
+  r = r.replace(/\^{([a-zA-Z0-9])}/g, '^$1');
+  r = r.replace(/_{([a-zA-Z0-9])}/g, '_$1');
+  // Normalize unnecessary braces: {a} → a (single token)
+  r = r.replace(/\{([a-zA-Z0-9])\}/g, '$1');
+  // Remove trailing/leading braces on entire expression
+  if (r.startsWith('{') && r.endsWith('}')) {
+    const inner = r.slice(1, -1);
+    let depth = 0, valid = true;
+    for (const ch of inner) {
+      if (ch === '{') depth++;
+      if (ch === '}') depth--;
+      if (depth < 0) { valid = false; break; }
+    }
+    if (valid && depth === 0) r = inner;
+  }
+  return r;
+}
+
+function compareLatex(userInput: string, expected: string): boolean {
+  const u = normalizeLatex(userInput);
+  const e = normalizeLatex(expected);
+  
+  // Direct match
+  if (u === e) return true;
+  
+  // Try evaluating numeric answers
+  const uNum = parseFloat(u);
+  const eNum = parseFloat(e);
+  if (!isNaN(uNum) && !isNaN(eNum) && Math.abs(uNum - eNum) < 0.0001) return true;
+  
+  // Compare fractions: \frac{a}{b} on both sides
+  const fracPattern = /^-?\\frac{([^}]+)}{([^}]+)}$/;
+  const uFrac = u.match(fracPattern);
+  const eFrac = e.match(fracPattern);
+  if (uFrac && eFrac) {
+    const uN = parseFloat(uFrac[1]), uD = parseFloat(uFrac[2]);
+    const eN = parseFloat(eFrac[1]), eD = parseFloat(eFrac[2]);
+    if (!isNaN(uN) && !isNaN(uD) && !isNaN(eN) && !isNaN(eD) && uD !== 0 && eD !== 0) {
+      if (Math.abs(uN / uD - eN / eD) < 0.0001) return true;
+    }
+    // String comparison of simplified fracs
+    if (uFrac[1] === eFrac[1] && uFrac[2] === eFrac[2]) return true;
+  }
+  
+  // User typed a plain number, expected is \frac{a}{1} → just a
+  if (!isNaN(uNum) && eFrac) {
+    const eN = parseFloat(eFrac[1]), eD = parseFloat(eFrac[2]);
+    if (!isNaN(eN) && !isNaN(eD) && eD !== 0 && Math.abs(uNum - eN / eD) < 0.0001) return true;
+  }
+  
+  // Handle ^1 equivalence: a^1 === a
+  const stripPow1 = (s: string) => s.replace(/\^1(?![0-9])/g, '');
+  if (stripPow1(u) === stripPow1(e)) return true;
+  
+  // Handle multiplication ordering: a×b === b×a, a^2×b^3 === b^3×a^2
+  const splitMul = (s: string) => s.split('×').sort().join('×');
+  if (splitMul(u) === splitMul(e)) return true;
+  if (splitMul(stripPow1(u)) === splitMul(stripPow1(e))) return true;
+  
+  // Handle fraction with multiplication: \frac{a×b}{c} vs \frac{b×a}{c}
+  const normFracMul = (s: string) => {
+    return s.replace(/\\frac{([^}]+)}{([^}]+)}/g, (_m, num, den) => {
+      const sortedNum = num.split('×').sort().join('×');
+      const sortedDen = den.split('×').sort().join('×');
+      return `\\frac{${sortedNum}}{${sortedDen}}`;
+    });
+  };
+  if (normFracMul(u) === normFracMul(e)) return true;
+  if (normFracMul(stripPow1(u)) === normFracMul(stripPow1(e))) return true;
+  
+  return false;
 }
 
 // ======== APP ========
@@ -242,9 +335,7 @@ function MainApp({ studentName, onLogout, darkMode, toggleDark }: { studentName:
     const userLatex = mqFieldRef.current.latex();
     setUserAnswer(userLatex);
     
-    // Simple comparison: normalize and compare
-    const normalize = (s: string) => s.replace(/\s+/g, '').replace(/\\cdot/g, '\\times').replace(/·/g, '\\times');
-    const correct = normalize(userLatex) === normalize(currentQuestion.answerLatex);
+    const correct = compareLatex(userLatex, currentQuestion.answerLatex);
     setIsCorrect(correct);
     setShowResult(true);
     stopTimer();
